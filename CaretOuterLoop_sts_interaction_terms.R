@@ -16,10 +16,10 @@ cat("\014")
 
 # set working directory: 
 #work_dir="C:/Users/HIEU/Desktop/Research_with_CM/cv_surgery";
-#work_dir="U:/Hieu/Research_with_CM/cv_surgery"
+work_dir="U:/Hieu/Research_with_CM/cv_surgery"
 #work_dir = getwd()
 #work_dir = paste0(work_dir, '/scratch/cv_surgery')
-work_dir = "/scratch/users/hnguye78@jhu.edu/cv_surgery"
+#work_dir = "/scratch/users/hnguye78@jhu.edu/cv_surgery"
 setwd(work_dir)
 
 # load libraries:
@@ -28,7 +28,7 @@ new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = T)
 
-source(paste0(work_dir, '/code/snippet/createDir.R'))
+source(paste0(work_dir, '/code/Cardiac_surgery_project_git/snippet/createDir.R'))
 
 # parallel work:
 parallelMap::parallelStartSocket(5)
@@ -148,7 +148,7 @@ start_time <- Sys.time()
   data = data[,which(names(data)!= 'concatid')]
   
   
-  class_ratio = table(data$label)[1]/table(data$label)[2]
+  class_ratio = table(data$label)[1]/(table(data$label)[2]+table(data$label)[1])
   # give more weight to the minority class (bad.outcome):
   model_weights = ifelse(data$label == "bad.outcome",
                          1-class_ratio,

@@ -24,14 +24,14 @@ setwd(work_dir)
 
 # load libraries:
 list.of.packages <- c("mlbench",'ggplot2','caret', 'dplyr', 'tibble', 'ROCR', 'doParallel', 'parallelMap'
-                      , 'pROC', 'PRROC', 'MLmetrics', 'caretEnsemble', 'purrr')
+                      , 'pROC', 'PRROC', 'MLmetrics', 'caretEnsemble', 'purrr', 'bisoreg')
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = T)
 
-source(paste0(work_dir, '/code/snippet/createDir.R'))
-source(paste0(work_dir, '/code/snippet/prc_functions.R'))
-source(paste0(work_dir, '/code/snippet/performance_custom.R'))
+source(paste0(work_dir, '/code/Cardiac_surgery_project_git/snippet/createDir.R'))
+source(paste0(work_dir, '/code/Cardiac_surgery_project_git/snippet/prc_functions.R'))
+source(paste0(work_dir, '/code/Cardiac_surgery_project_git/snippet/performance_custom.R'))
 
 # parallel work:
 parallelMap::parallelStartSocket(2)
@@ -615,7 +615,17 @@ start_time <- Sys.time()
   model.predicted.prob_xgboost_stack <- predict(stack.xgboost, newdata = test.data, type = 'prob')
   save(model.predicted.prob_xgboost_stack, file = paste0(work_dir,'/rdata_files/sts_pred/mort/predicted_prob_fold_1.RData'))
   
+  # confusion matrix :#################################################################################
+  
   # confusion matrix from the 0.5 threshold cutoff:
+  
+  # load data:
+  test.data <- get(load(paste0(work_dir,'/rdata_files/sts_pred/mort/test_data_fold_1.RData')))
+  model <- get(load("U:/Hieu/Research_with_CM/cv_surgery/rdata_files/sts_pred/mort/stacking/2nd_layer/stack_xgboost_fold_13.Rdata"))
+  stack.xgboost <- model
+  
+  model = get(load(paste0(work_dir,'/rdata_files/sts_pred/mort/predicted_prob_fold_1.RData')))
+  
   model.predicted.class_xgboost_stack <- predict(stack.xgboost, newdata = test.data, type = 'raw')
   confusionMatrix(data = model.predicted.class_xgboost_stack, reference =test.data$label)
   
@@ -631,7 +641,7 @@ start_time <- Sys.time()
   table(class_best_threshold)
   confusionMatrix(data = class_best_threshold, reference =test.data$label)
   
-  # calibration plot:
+  # calibration plot: #####################################################################################
   trellis.par.set(caretTheme())
   lift_results <- data.frame(Class = test.data$label, Pred_prob = model.predicted.prob_xgboost_stack)
   cal_obj <- calibration(Class ~ Pred_prob, data = lift_results)
@@ -643,3 +653,93 @@ start_time <- Sys.time()
 
   brier = mean(((1-model.predicted.prob_xgboost_stack) - (as.numeric(test.data$label)-1))^2)
   brier
+
+  
+  # Recalibration: ############################################################################
+  
+  model_name <- allmodel_names[temp_count]
+  #model_prediction <- predict(model, newdata = testing, type = "raw")
+  model_prediction <-model.predicted.class_xgboost_stack
+  levels(model_prediction) <- c('class_1', 'class_0')
+  model_prediction <- relevel(model_prediction, "class_1")
+  levels(test.data$label) <- c('class_1', 'class_0')
+  test.data$label <- relevel(test.data$label, "class_1")
+  #model_prediction_prob <- predict(model, newdata = testing, type = "prob")
+  model_prediction_prob <- model.predicted.prob_xgboost_stack
+  model_prediction_prob_df <- as.data.frame(cbind(test.data$label,  model_prediction_prob, 1-model_prediction_prob, model_prediction))
+  colnames(model_prediction_prob_df) <- c("obs", "class_0","class_1", "pred")
+  model_prediction_prob_df$obs <- as.factor(model_prediction_prob_df$obs)
+  
+  cal_plot_data <- calibration(obs ~ class_1, data = model_prediction_prob_df, cuts = 10)$data
+  cal_plot_data$type <- "uncalibrated"
+  
+  qplot(cal_plot_data$midpoint, cal_plot_data$Percent)
+  
+  
+  xg_val_prob <- stack.xgboost$ens_model$pred
+  xg_val_prob <- xg_val_prob[which(xg_val_prob$nrounds == stack.xgboost$ens_model$bestTune$nrounds & 
+                                     xg_val_prob$eta == stack.xgboost$ens_model$bestTune$eta &
+                                     xg_val_prob$max_depth == stack.xgboost$ens_model$bestTune$max_depth &
+                                     xg_val_prob$gamma == stack.xgboost$ens_model$bestTune$gamma &
+                                     xg_val_prob$colsample_bytree == stack.xgboost$ens_model$bestTune$colsample_bytree &
+                                     xg_val_prob$min_child_weight == stack.xgboost$ens_model$bestTune$min_child_weight &
+                                     xg_val_prob$subsample == stack.xgboost$ens_model$bestTune$subsample), ]
+  
+  temp_probs <- xg_val_prob %>% dplyr::select(obs, good.outcome, bad.outcome)
+  temp_weights <- xg_val_prob %>% dplyr::select(weights)
+  temp_probs$obs <- ordered(temp_probs$obs, levels = c("good.outcome", "bad.outcome"))
+  lr_model = glm(obs ~ good.outcome, data = temp_probs,
+                 family = quasibinomial)
+  
+  pred_probs <- temp_probs$bad.outcome
+  pred_obs <- 1*(temp_probs$obs == "bad.outcome")
+  
+  idx <- duplicated(pred_probs)
+  pred_probs <- pred_probs[!idx]
+  pred_obs <- pred_obs[!idx]
+  
+  iso.model <- isoreg(pred_probs, pred_obs)
+  # sum(residuals(iso.model)^2)
+  
+  # for isotonic:
+  lr_probs <- as.stepfun(iso.model)(model_prediction_prob_df$class_1)
+  #lr_probs <- as.stepfun(iso.model)(temp_probs$bad.outcome)
+  
+  names(model_prediction_prob_df)[2] = 'good.outcome'
+  
+  # for sigmoid:
+  lr_probs <- predict(lr_model, newdata = model_prediction_prob_df[,1:2], type = "response")
+  #lr_probs <- predict(lr_model, newdata = temp_probs[,1:2], type = "response")
+  
+
+  # lr_probs <- fit.isoreg(iso.model, model_prediction_prob_df$class_1)
+  
+  hist(lr_probs)
+  
+  class_lr_probs = as.data.frame(cbind(as.character(test.data$label), lr_probs))
+  class_lr_probs$lr_probs <- as.numeric(as.character(class_lr_probs$lr_probs))
+  colnames(class_lr_probs) <- c("obs", "class_0")
+  class_lr_probs$obs <- ordered(class_lr_probs$obs, levels = c("class_0", "class_1"))
+  
+  
+  cal_lr_plot_data = calibration(as.factor(pred_obs) ~ pred_probs,
+                                 data = data.frame(pred_probs, pred_obs), class = "1")$data
+  cal_lr_plot_data$type <- "uncalibrated"
+  
+  qplot(cal_lr_plot_data$midpoint, cal_lr_plot_data$Percent)
+  
+  cal_lr_plot_data = calibration(obs ~ class_0,
+                                 data = class_lr_probs, class = "class_0")$data
+  cal_lr_plot_data = calibration(obs ~ good.outcome,
+                                 data = temp_probs, class = "good.outcome")$data
+  
+  cal_lr_plot_data$type <- "calibrated"
+  
+  qplot(cal_lr_plot_data$midpoint, cal_lr_plot_data$Percent)
+  
+  cal_obj_iso <- calibration(obs ~ class_0,
+                             data = class_lr_probs)
+  plot(cal_obj_iso, type = "b", auto.key = list(columns = 1,
+                                                lines = TRUE,
+                                                points = T))
+  
