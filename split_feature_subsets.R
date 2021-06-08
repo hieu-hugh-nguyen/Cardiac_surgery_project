@@ -1,4 +1,8 @@
-#work_dir="U:/Hieu/Research_with_CM/cv_surgery"
+rm(list=ls()) #Clear all
+cat("\014")
+work_dir="U:/Hieu/Research_with_CM/cv_surgery"
+setwd(work_dir)
+
 work_dir <- 'U:/Hieu/Research_with_CM/cv_surgery/csv_files/OneDrive_2020-09-04/Extract 20200831'
 data_full = readxl::read_xlsx(paste0(work_dir,'/Revised data export 20200831','.xlsx')
                      )
@@ -25,7 +29,8 @@ na_count = data.frame(sapply(feature_space, function(y) sum(length(which(is.na(y
 
 write.csv(feature_space, file = paste0(work_dir,'/csv_files/feature_space_pre_intra_anat','.csv'))
 
-DataExplorer::create_report(feature_space)
+# uncomment if need the data report:
+# DataExplorer::create_report(feature_space)
 
 anat_features <- c('opcab opvalve opocard oponcard concalc aodx numimada distvein numcab aov aov_repl aov_repair vstcv anlrenl mv vsmvpr vsmitrannulo vsmitrleafres tv tv_repair tv_replace pv atrial_app rhythm_dev asd af aorta')
 
@@ -33,7 +38,7 @@ anat_feature_vec <- stringr::str_split(anat_features, pattern = ' ', n = Inf, si
   unlist()
 
 
-# Intraoperative – clinical features:
+# Intraoperative clinical features:
 
 cli_features <- c('emrg_ami emrg_anatomy emrg_dissect nc_stern cpb perfustm circarr xclamp xclamptm canartstaort canartstfem canvenstfem canvenstbi canvenstrta lwsttemp lwstintrahemo lwsthct highintraglu cplegia_ant cplegia_ret ceroxused ibdrbcu ibdplatu ibdffpu ibdcryou frepl imedeaca imedtran prepar prepmr preptr ppef iabp_iop ecmo_iop') 
 
