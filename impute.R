@@ -9,12 +9,14 @@ list.of.packages <- c("randomForestSRC",'haven','caret', 'dplyr', 'tibble', 'Hmi
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = T)
-parallelMap::parallelStartSocket(2)
 
+ncores <- parallel::detectCores(all.tests = FALSE, logical = TRUE)
+parallelMap::parallelStartSocket(ncores-1)
 
+data_name_to_impute <- 'feature_space_preoperative' #or 'feature_space_preop_anat_intra'
 
 loading_dir = paste0(work_dir,'/csv_files')
-feature_space = read.csv(paste0(loading_dir,'/feature_space_preoperative_plus_sts_pred.csv')
+feature_space = read.csv(paste0(loading_dir,'/',data_name_to_impute,'.csv')
                          ,stringsAsFactors = T)
 na_count <-data.frame(sapply(feature_space, function(y) sum(length(which(is.na(y))))))
 
@@ -25,17 +27,14 @@ for(i in 1:ncol(feature_space2)){
 }
 na_count2 <-data.frame(sapply(feature_space2, function(y) sum(length(which(is.na(y))))))
 saving_dir = paste0(work_dir, '/csv_files')
-write.csv(feature_space2, file = paste0(saving_dir,'/imputed_mean_feature_space_preoperative_plus_sts_pred.csv'), row.names = F)
+write.csv(feature_space2, file = paste0(saving_dir,'/imputed_mean_',data_name_to_impute,'.csv'), row.names = F)
 
 
 # Set categorical feature_space to factor type: 
 
 loading_dir = paste0(work_dir,'/csv_files')
-# var_dict = read.csv(paste0(loading_dir,"/all_vars_dictionary_pre_and_intraoperative_20210416.csv")
-#                     ,stringsAsFactors = F)
-# names(var_dict)[5] = "continuous = 1"
 
-var_dict <- openxlsx::read.xlsx(paste0(loading_dir,"/MCSQI variables.xlsx")
+var_dict <- openxlsx::read.xlsx(paste0(loading_dir,"/MCSQI variables (1).xlsx")
                                 , sheet = 1
                                 , na.strings = ".")
 names(var_dict)[6] = "continuous = 1"
@@ -60,5 +59,5 @@ print(paste0('Imputation time in s: ',round(Sys.time()-start_time)))
 imp.feature_space = cbind(feature_space$concatid, imp_feature_space)
 
 saving.dir = paste0(work_dir,'/csv_files')
-write.csv(imp.feature_space, file = paste0(saving.dir,'/imputed_unsupervised_feature_space_preoperative_plus_sts_pred.csv'), row.names = F)
+write.csv(imp.feature_space, file = paste0(saving.dir,'/imputed_unsupervised_',data_name_to_impute,'.csv'), row.names = F)
 

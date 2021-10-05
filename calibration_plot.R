@@ -9,21 +9,24 @@ out = 'cpvntlng' # sts_mort
 # outcome = '14D_LOS'
 # out = 'sts_14d'
 load_dir <- 'U:/Hieu/Research_with_CM/cv_surgery/for_cedric'
-pred_prob_df <- read.csv(paste0(load_dir, '/patient_specific_pred_prob_testset_', out, '.csv'))
+#pred_prob_df <- read.csv(paste0(load_dir, '/patient_specific_pred_prob_testset_', out, '.csv'))
+
 # pred_prob_df <- read.csv(paste0(load_dir, '/patient_specific_pred_prob_testset_cpvntlng.csv'))
 
-label_df <- read.csv(paste0(load_dir, '/testset_feature_df_', out, '.csv'))
+#label_df <- read.csv(paste0(load_dir, '/testset_feature_df_', out, '.csv'))
+
+pred_prob_df <- read.csv(paste0(load_dir, '/patient_specific_pred_prob_testset_isotonic_on_cv_sts_mort.csv'))
 
 require(dplyr)
 require(ggplot2)
 
 plot_df <- tibble(mean_risk = numeric(), Category = character(), Decile = numeric(), time = numeric())
 
-for (time in 1:50){
+for (time in 1:10){
 #  time = 1
-  cali_df <- pred_prob_df %>% dplyr::select(c('concatid', paste0('time_', time))) %>%
-    inner_join(label_df %>% dplyr::select(c('concatid', out)), by = 'concatid')
-  names(cali_df) <- c('concatid', 'prob', 'label')
+  cali_df <- pred_prob_df %>% dplyr::select(c('concatid', 'label', paste0('time_', time))) #%>%
+   # inner_join(label_df %>% dplyr::select(c('concatid', out)), by = 'concatid')
+  names(cali_df) <- c('concatid', 'label','prob')
   cali_df <- cali_df %>% mutate(label = ifelse(label == 2, 0, 1)) %>%
     mutate(decile = ntile(prob, 10))
   

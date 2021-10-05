@@ -4,21 +4,20 @@
 rm(list=ls()) #Clear all
 cat("\014")
     
-outcome = 'CPVNTLNG'
-out = 'cpvntlng' # sts_mort
-# outcome = '14D_LOS'
-# out = 'sts_14d'
-load_dir <- 'U:/Hieu/Research_with_CM/cv_surgery/for_cedric'
+
+outcome = '14D_LOS'
+out = 'sts_14d'
+
+
+load_dir <- 'U:/Hieu/Research_with_CM/cv_surgery/for_cedric/Calibrated_Prediction_Probabilities'
 # pred_prob_df <- read.csv(paste0(load_dir, '/patient_specific_pred_prob_testset_cpvntlng.csv'))
 # pred_prob_df <- read.csv(paste0(load_dir, '/pred_prob_testset_sigmoid_cpvntlng.csv'))
 # pred_prob_df <- read.csv(paste0(load_dir, '/pred_prob_testset_sigmoid_cv_cb_downsampled_cpvntlng.csv'))
 # pred_prob_df <- read.csv(paste0(load_dir, '/pred_prob_testset_isotonic_on_db_cpvntlng.csv'))
 # pred_prob_df <- read.csv(paste0(load_dir, '/pred_prob_testset_iso_cpvntlng.csv'))
-pred_prob_df <- read.csv(paste0(load_dir, '/pred_prob_testset_isotonic_on_cv_cpvntlng.csv'))
+# pred_prob_df <- read.csv(paste0(load_dir, '/pred_prob_testset_isotonic_on_cv_cpvntlng.csv'))
 
-
-# pred_prob_df <- read.csv(paste0(load_dir, '/pred_prob_testset_before_iso_', out, '.csv'))
-# pred_prob_df <- read.csv(paste0(load_dir, '/pred_prob_testset_isotonic_cpvntlng.csv'))
+pred_prob_df <- read.csv(paste0(load_dir, '/patient_specific_pred_prob_testset_isotonic_on_cv_',out,'.csv'))
 
 
 
@@ -28,9 +27,13 @@ require(ggplot2)
 
 plot_df <- tibble(mean_risk = numeric(), Category = character(), Decile = numeric(), time = numeric())
 
-# for (time in 1:50){
-  time = 1
-  cali_df <- pred_prob_df %>% mutate(label = ifelse(pred_prob_df$label == "[1]", 1, 0))
+for (time in 1:10){
+#  time = 1
+#  cali_df <- pred_prob_df %>% mutate(label = ifelse(pred_prob_df$label == "[1]", 1, 0))
+  cali_df <- pred_prob_df %>% dplyr::select(c('concatid', 'label', paste0('time_', time))) %>%
+    mutate(label = ifelse(pred_prob_df$label == 1, 1, 0))
+  names(cali_df) <- c('concatid', 'label','pred')
+  
   cali_df <- cali_df %>% mutate(prob = pred) %>%
     mutate(decile = ntile(prob, 10))
   
@@ -69,7 +72,7 @@ plot_df <- tibble(mean_risk = numeric(), Category = character(), Decile = numeri
   
   
   }
-#}
+}
 
 data_summary <- function(data, varname, groupnames){
   require(plyr)
