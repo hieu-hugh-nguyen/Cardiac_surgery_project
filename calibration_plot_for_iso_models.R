@@ -5,8 +5,8 @@ rm(list=ls()) #Clear all
 cat("\014")
     
 
-outcome = '14D_LOS'
-out = 'sts_14d'
+outcome = 'Renal Failure'
+out = 'crenfail'
 
 
 load_dir <- 'U:/Hieu/Research_with_CM/cv_surgery/for_cedric/Calibrated_Prediction_Probabilities'
