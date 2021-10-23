@@ -5,8 +5,8 @@ rm(list=ls()) #Clear all
 cat("\014")
     
 
-outcome = 'Renal Failure'
-out = 'crenfail'
+outcome = 'Readmission'
+out = 'readmit'
 
 
 load_dir <- 'U:/Hieu/Research_with_CM/cv_surgery/for_cedric/Calibrated_Prediction_Probabilities'
@@ -19,7 +19,7 @@ load_dir <- 'U:/Hieu/Research_with_CM/cv_surgery/for_cedric/Calibrated_Predictio
 
 pred_prob_df <- read.csv(paste0(load_dir, '/patient_specific_pred_prob_testset_isotonic_on_cv_',out,'.csv'))
 
-
+#patient_specific_pred_prob_testset_isotonic_on_cv_cpvntlng
 
 
 require(dplyr)
