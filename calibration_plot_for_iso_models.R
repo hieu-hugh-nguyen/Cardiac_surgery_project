@@ -5,11 +5,12 @@ rm(list=ls()) #Clear all
 cat("\014")
     
 
-outcome = 'Readmission'
-out = 'readmit'
+outcome = 'Stroke'
+out = 'cnstrokp'
 
 
 load_dir <- 'U:/Hieu/Research_with_CM/cv_surgery/for_cedric/Calibrated_Prediction_Probabilities'
+load_dir <- 'U:/Hieu/Research_with_CM/cv_surgery/csv_files/pre_anat_intra_models'
 # pred_prob_df <- read.csv(paste0(load_dir, '/patient_specific_pred_prob_testset_cpvntlng.csv'))
 # pred_prob_df <- read.csv(paste0(load_dir, '/pred_prob_testset_sigmoid_cpvntlng.csv'))
 # pred_prob_df <- read.csv(paste0(load_dir, '/pred_prob_testset_sigmoid_cv_cb_downsampled_cpvntlng.csv'))
